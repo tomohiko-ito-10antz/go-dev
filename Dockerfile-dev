@@ -37,7 +37,7 @@ RUN ( \
     echo 'PermitRootLogin yes'; \
     echo 'PasswordAuthentication yes'; \
     echo 'Subsystem sftp /usr/lib/openssh/sftp-server'; \
-  ) > /etc/ssh/sshd_config_test_clion \
+  ) > /etc/ssh/sshd_config_test_goland \
   && mkdir /run/sshd
 
 RUN useradd -m user \

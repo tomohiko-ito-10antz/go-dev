@@ -3,3 +3,4 @@ Golang project template for development using GoLand or VSCode
 
 ## VSCode
 
+## GoLand
