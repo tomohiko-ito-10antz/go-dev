@@ -1,14 +1,14 @@
-package tcp
+package main
 
 import (
-	"bufio"
 	"bytes"
+	"fmt"
+	"github.com/tomohiko-ito-10antz/go-dev/fizzbuzz"
 	"log"
 	"net"
-	"strconv"
 )
 
-func FizzBuzzServer() {
+func main() {
 	udpAddr := &net.UDPAddr{
 		IP:   nil,
 		Port: 5678,
@@ -18,54 +18,35 @@ func FizzBuzzServer() {
 		log.Fatalf(`Fail to listen: %+v`, err)
 	}
 	log.Println("Listen")
-	buffers := map[*net.UDPAddr]*bytes.Buffer{}
-	scanners := map[*net.UDPAddr]*bufio.Scanner{}
-	var buf = make([]byte, 1024)
+
+	buffers := map[net.Addr]*bytes.Buffer{}
+	var buf = make([]byte, 128)
 	for {
-		n, addr, err := conn.ReadFromUDP(buf)
+		nRead, addr, err := conn.ReadFrom(buf)
 		if err != nil {
 			log.Fatalf(`Fail to read: %+v`, err)
 		}
-		if _, ok := buffers[addr]; !ok {
-			buffers[addr] = bytes.NewBuffer(nil)
+		buffer, ok := buffers[addr]
+		if !ok {
+			buffer = bytes.NewBuffer(nil)
+			buffers[addr] = buffer
 		}
-		_, err = buffers[addr].Write(buf[:n])
+		_, err = buffer.Write(buf[:nRead])
 		if err != nil {
 			log.Fatalf(`Fail to read: %+v`, err)
 		}
-
-		if _, ok := scanners[addr]; !ok {
-			scanners[addr] = bufio.NewScanner(buffers[addr])
-			scanners[addr].Split(bufio.ScanWords)
-		}
-
-		scanner := scanners[addr]
-		for scanner.Scan() {
-			token := scanner.Text()
-			log.Printf("Receive %s\n", token)
-
-			var result string
-			number, err := strconv.ParseInt(token, 10, 64)
-			if err != nil {
-				result = "Error"
-			} else {
-				switch {
-				case number%15 == 0:
-					result = "FizzBuzz"
-				case number%3 == 0:
-					result = "Fizz"
-				case number%5 == 0:
-					result = "Buzz"
-				default:
-					result = token
-				}
+		for {
+			var text string
+			if _, err := fmt.Fscan(buffer, &text); err != nil {
+				break
 			}
-			_, err = conn.WriteToUDP([]byte(result+"\n"), addr)
+			log.Println("Receive")
+			_, err = conn.WriteTo([]byte(fizzbuzz.FizzBuzz(text)+"\n"), addr)
 			if err != nil {
-				log.Printf("Error %+v\n", err)
-				return
+				log.Printf(`Fail to send: %+v`, err)
+				break
 			}
-			log.Printf("Send %s\n", result)
+			log.Println("Send")
 		}
 	}
 }

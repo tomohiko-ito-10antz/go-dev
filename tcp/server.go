@@ -1,13 +1,14 @@
-package tcp
+package main
 
 import (
+	"bufio"
+	"fmt"
+	"github.com/tomohiko-ito-10antz/go-dev/fizzbuzz"
 	"log"
 	"net"
-
-	"github.com/tomohiko-ito-10antz/go-dev/tcp/handler"
 )
 
-func FizzBuzzServer() {
+func main() {
 	tcpAddr := &net.TCPAddr{
 		IP:   net.ParseIP("0.0.0.0"),
 		Port: 1234,
@@ -24,8 +25,18 @@ func FizzBuzzServer() {
 		}
 		log.Println("Accept")
 		go func(conn net.Conn) {
-			handler.FizzBuzz(conn)
-			conn.Close()
+			defer conn.Close()
+			scanner := bufio.NewScanner(conn)
+			scanner.Split(bufio.ScanWords)
+			for scanner.Scan() {
+				log.Println("Receive")
+				_, err := fmt.Fprintln(conn, fizzbuzz.FizzBuzz(scanner.Text()))
+				if err != nil {
+					log.Printf(`Fail to send: %+v`, err)
+					return
+				}
+				log.Println("Send")
+			}
 		}(conn)
 	}
 }
